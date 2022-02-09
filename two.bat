@@ -1,0 +1,1 @@
+powershell.exe  -ExecutionPolicy unrestricted -File  C:\Users\EDZ\Desktop\script\check.ps1
