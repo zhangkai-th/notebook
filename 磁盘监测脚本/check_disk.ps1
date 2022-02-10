@@ -11,7 +11,11 @@
 param(
 [int] $wait_second = 3,
 [int] $cap_cap = 5,
-[string] $emails = "837861802@qq.com;18729961833@139.com"
+[string] $emails = "837861802@qq.com;18729961833@139.com",
+[string] $smtp_server = "smtp.139.com",
+[int] $smtp_port = 25,
+[string] $smtp_emial = "18729961833@139.com",
+[string] $email_password = "17cb117eb8fc75d4b100"
 )
 
 $global_val = ""
@@ -33,20 +37,19 @@ param (
 
 
 
-    $EmailFrom = "18729961833@139.com"
+    $EmailFrom = $smtp_emial
     $EmailTo = $emails.Split(";")
     $Subject = $Subject+"告警"
     #$Body = "This is mail body"
-    $SMTPServer = "smtp.139.com"
-    $SMTPClient = New-Object Net.Mail.SmtpClient($SMTPServer, 25)
+    $SMTPServer = $smtp_server
+    $SMTPClient = New-Object Net.Mail.SmtpClient($SMTPServer, $smtp_port)
     $SMTPClient.EnableSsl = $true
-    $SMTPClient.Credentials = New-Object System.Net.NetworkCredential("18729961833@139.com", "17cb117eb8fc75d4b100");
+    $SMTPClient.Credentials = New-Object System.Net.NetworkCredential($smtp_emial, $email_password);
     foreach ($Email in $EmailTo)
     {
         if($Body.Length -ne 0){
             Write-Host $Email -BackgroundColor yellow
             $SMTPClient.Send($EmailFrom, $Email, $Subject, $Body)
-            Write-Host $res
         }
     }
 }
@@ -113,10 +116,15 @@ param(
         $memory_percent = [math]::round((1-$ops.FreePhysicalMemory / $ops.TotalVisibleMemorySize)*100, 2)
         $total_memory = [math]::round($ops.TotalVisibleMemorySize / (1mb), 2)
         $aviable_memory = [math]::round($ops.FreePhysicalMemory / (1mb), 2)
-        $global_val="内存使用量:"+$global_val+$memory_percent+"%`n"
-        $global_val=$global_val+"内存总量  :"+$total_memory+"GB`n"
-        $global_val=$global_val+"可用内存  :"+$aviable_memory+"GB`n"
-        Write-Host $global_val -BackgroundColor Red
+        if($memory_percent -ge 90)   #使用率大于90则发送邮件
+        {
+            $global_val="内存使用量:"+$global_val+$memory_percent+"%`n"
+            $global_val=$global_val+"内存总量  :"+$total_memory+"GB`n"
+            $global_val=$global_val+"可用内存  :"+$aviable_memory+"GB`n"
+            Write-Host $global_val -BackgroundColor Red
+        }
+        
+        
 
 
 $diskinfo = Get-WmiObject -Class win32_logicaldisk | Select-Object -Property *,
@@ -138,10 +146,4 @@ send_email $global_val
 
 
 DiskCheck -WaitS $wait_second $cap_cap
-
-
-
-
-
-
 
